@@ -1,0 +1,9 @@
+Notes on using the Stellarium remote control interface:
+
+
+http://stellarium.org/doc/head/remoteControlApi.html
+
+Example Stellarium remote control commands:
+wget --post-data 'target=HIP 65113' http://localhost:8090/api/main/focus
+
+wget --post-data 'j2000=[-0.33552891867613527, -0.09222224123847146, -0.9375048815622117]' http://localhost:8090/api/main/view
