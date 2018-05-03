@@ -24,6 +24,11 @@
 
 
 #include "magtelescope.hpp"
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+
 #include <pthread.h>
 
 
@@ -78,7 +83,7 @@ int lsocket (int port)
 void * listen_telescope_socket(void *vmf)
 {
    mtsfile mtf;
-   char string[100];
+   char string[MAGTCS_INPUT_SIZE];
 
    mtf.mts = ((mtsfile *) vmf)->mts;
    mtf.fd = ((mtsfile *) vmf)->fd;
@@ -91,9 +96,9 @@ void * listen_telescope_socket(void *vmf)
       exit (-6);
    }
       
-   while (!tcs_fgets(string, 100, fp)) 
+   while (!tcs_fgets(string, MAGTCS_INPUT_SIZE, fp)) 
    {
-      mtf.mts->process_string(string, fp, mtf.port == 5800 ); /// \todo status only port
+      mtf.mts->process_string(string, MAGTCS_INPUT_SIZE, fp, mtf.port == 5800 ); /// \todo status only port
    }
    
    std::cerr << "Closing\n";

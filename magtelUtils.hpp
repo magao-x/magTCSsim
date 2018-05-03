@@ -57,7 +57,8 @@ int tcs_fputs( char *string,
 }
 
 int tcs_fgets( char *string, 
-               int length,FILE *fp
+               int length,
+               FILE *fp
              )
 {
    if (fseek (fp, 0L, SEEK_CUR) != 0)              
@@ -65,10 +66,12 @@ int tcs_fgets( char *string,
       //Do nothing?
       ;
    }
-   if (fgets (string, length, fp) == NULL) 
+   
+   if ( fgets (string, length, fp) == NULL ) 
    {
-       return (-1);
+       return -1;
    }
+   
    if (string[strlen(string)-1] == '\n') string[strlen(string)-1] = 0;
    
    return 0;

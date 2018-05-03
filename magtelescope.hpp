@@ -25,22 +25,13 @@
 #ifndef magtelescope_hpp
 #define magtelescope_hpp
 
-#include "magtelUtils.hpp"
 
 
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-
-#include <stdlib.h>
-
-#include <cmath>
-#include <ctime>
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <vector>
 #include <list>
-
 #include <map>
 
 #include <boost/math/constants/constants.hpp>
@@ -52,6 +43,7 @@
 
 #include "cmdstr.hpp"
 #include "tellog.hpp"
+#include "magtelUtils.hpp"
 
 
 
@@ -64,7 +56,8 @@
 #define AUX2 4
 #define AUX3 5
 
-
+#define MAGTCS_RESP_SIZE (1024)
+#define MAGTCS_INPUT_SIZE (1024)
 
 class magtelescope
 {
@@ -77,50 +70,51 @@ protected:
    double m_ra {0};   ///< The current right ascension, hours
    double m_dec {0};  ///< The current declination, degrees
    
-   double next_ra;  ///< The next value of RA, which will be slewed to.
-   double next_dec; ///< The next value of Dec, which will be slewed to.
+   double m_next_ra {0};  ///< The next value of RA, which will be slewed to.
+   double m_next_dec {0}; ///< The next value of Dec, which will be slewed to.
    
-   double off_ra;   ///< The offset in RA
-   double off_dec;  ///< The offset in Dec
+   double m_off_ra {0};   ///< The offset in RA
+   double m_off_dec {0};  ///< The offset in Dec
    
-   double az;       ///< azimuth, north referenced, degrees
-   double el;       ///< elevation, degrees
+   double m_az {0};       ///< azimuth, east of north, degrees
+   double m_el {0};       ///< elevation, degrees
+   
    double next_az;  ///< The next value of azimuth, which will be slewed to.
    double next_el;  ///< The next value of elevatoin, which will be slewed to.
    
    double epoch;    ///< coordinate epoch
    double airmass;  ///< the current airmass
 
-   int telfocus;    //= 001725
-   int telx;
-   int tely;
-   double telh;
-   double telv;
+   int telfocus;    ///< Focus, or z, position of the 2ndary mirror.
+   int telx;        ///< X position of the 2ndary mirror.
+   int tely;        ///< Y position of the 2ndary mirror.
+   double telh;     ///< H angle of the 2ndary mirror.
+   double telv;     ///< V angle of the 2ndary mirror.
    
    //int secx;
    //int secy;
 
-   int roi ;//the rotator of interest
-   double rotangle; // =  318.4265
-   double next_rotangle;
+   int roi;              ///< The rotator of interest
+   double rotangle;      ///< The rotator angle
+   double next_rotangle; ///< The next rotator angle to slew to.
    
-   double rotenc; //The rotator encoder angle
+   double rotenc;        ///< The rotator encoder angle
    
    
 
    //Simulation flags
-   int simulating;
-   int tracking;
-   int rottracking;
+   int simulating;  ///< True if simulating.
+   int tracking;    ///< True if telescope tracking.
+   int rottracking; ///< True if rotator tracking (following).
 
-   int slewing;///<1 if currently slewing
-   int was_tracking;///<to reset tracking after slewing
+   int slewing;      ///< 1 if currently slewing
+   int was_tracking; ///< to reset tracking after slewing
 
-   int guiding;///<1 if guiding - just a flag, doesn't do anything here.
-   int was_guiding; ///<to reset to guiding after slewing
+   int guiding;     ///< 1 if guiding - just a flag, doesn't do anything here.
+   int was_guiding; ///< to reset to guiding after slewing
    
-   int rotmode; ///<1 if following
-   int rotwas_following; ///<to reset to following after slewing
+   int rotmode; ///< 1 if following
+   int rotwas_following; ///< to reset to following after slewing
 
    //Simulation time hacks
    double simstart;
@@ -248,29 +242,72 @@ public:
      */
    int dec(double d /**< [in] the new value of Declination*/);
 
-      
-   void set_next_ra(double r);
-   double get_next_ra(){return next_ra;}
-   void set_off_ra(double r);
-   double get_off_ra();
-   
-   
+   /// Get the current value of next_ra
+   /**
+     * \returns the current value of m_next_ra.
+     */
+   double next_ra();
 
+   /// Set the value of next_ra.
+   /**
+     * \returns 0 on success.
+     * \returns -1 on error.
+     */
+   int next_ra(double r /**< [in] the new value of next_ra*/);
    
-   void set_next_dec(double d);
-   double get_next_dec(){return next_dec;}
-   void set_off_dec(double d);   double get_off_dec();
+   /// Get the current value of next_dec
+   /**
+     * \returns the current value of m_next_dec.
+     */
+   double next_dec();
+
+   /// Set the value of next_dec.
+   /**
+     * \returns 0 on success.
+     * \returns -1 on error.
+     */
+   int next_dec(double d /**< [in] the new value of next_dec*/);
+   
+   /// Get the current value of off_ra
+   /**
+     * \returns the current value of m_off_ra.
+     */
+   double off_ra();
+   
+   /// Set the value of next_ra.
+   /**
+     * \returns 0 on success.
+     * \returns -1 on error.
+     */
+   int off_ra(double r /**< [in] the new value of off_ra */);
+     
+   /// Get the current value of off_dec
+   /**
+     * \returns the current value of m_off_dec.
+     */
+   double off_dec();
+   
+   /// Set the value of next_dec.
+   /**
+     * \returns 0 on success.
+     * \returns -1 on error.
+     */
+   int off_dec(double d /**< [in] the new value of off_dec */);   
+   
 	
   
 
-   void set_az(double a);
+   void set_az(double a /**< [in] the new value of */);
    double get_az(bool nocalc = false);
 
-   void set_el(double e);
+   void set_el(double e /**< [in] the new value of */);
    double get_el(bool nocalc = false);
 
-   int set_ra_dec(double nra, double ndec);
-   int set_az_el(double naz, double nel);
+   int set_ra_dec(double nra, 
+                  double ndec);
+   
+   int set_az_el(double naz, 
+                 double nel);
    double get_ha(bool nocalc = false);
    double get_next_ha();
 
@@ -293,16 +330,16 @@ public:
    void set_telfocus(int tf);
    
    int get_telx(){return telx;}
-   void set_telx(int tx);
+   void set_telx(int tx /**< [in] the new value of */);
    
    int get_tely(){return tely;}
-   void set_tely(int ty);
+   void set_tely(int ty /**< [in] the new value of */);
    
    double get_telh(){return telh;}
-   void set_telh(double th);
+   void set_telh(double th /**< [in] the new value of */);
    
    double get_telv(){return telv;}
-   void set_telv(double tv);
+   void set_telv(double tv /**< [in] the new value of */);
    
    /*int get_secx(){return secx;}
    void set_secx(int sx);
@@ -316,7 +353,7 @@ public:
    double get_rotenc(); //returns the current rotator encoder angle.
    
    double get_next_rotangle(){return next_rotangle;}
-   int set_next_rotangle(double nr);
+   int set_next_rotangle(double nr /**< [in] the new value of */);
    
    
    
@@ -369,13 +406,35 @@ public:
    
    
    //Interface
-   int process_string(char * inpstr, FILE *fp, bool statonly);
+   
+   /// The main entry point for command/request processing.
+   /** Processes inpstr and calls the appropriate function.
+     * - if there is a space and inpstr begins with "tcssim" then simulator commands are processed.
+     * - otherwise, if there is a space process_command is called.
+     * - otherwise, get_status is called.
+     *
+     * \returns 0 on success
+     * \returns -1 on error
+     * 
+     */
+   int process_string( char * inpstr, ///< [in] The input string to process.
+                       int ssz,       ///< [in] The maximum size of the input string (not the same as strlen(inpstr).
+                       FILE *fp,      ///< [in] The FILE to which to write the response
+                       bool statonly  ///< [in] Set to true if this is input from a status-only port
+                     );
    
    int process_command(char *response, std::string inpstr);
    
-   int get_status(char *status, char *cmd_str, int statlen);
    
-   int get_status(char *status, int cmd_N, int statlen);
+   /// Process a status request and create the response.
+   /**
+     * \returns 0 on success
+     * \returns -1 on error
+     */ 
+   int get_status( char *status, ///< [out] Buffer to hold the status message
+                   int statlen,  ///< [in] The length of the status buffer
+                   char *cmd_str ///< [in[ The command string to interpret as a status request.
+                 );
    
    int do_command(int cmd_N, std::vector<std::string> args);
    
@@ -399,11 +458,6 @@ magtelescope::magtelescope()
    
    for(int i=0;i<3;i++) m_dateobs[i] = 0;
 
-   next_ra = 0.0;
-   next_dec = 0.0;
-   
-   az = 0.0;
-   el = 0.0;
 
    epoch = 0;
    airmass = 0;
@@ -600,10 +654,10 @@ void magtelescope::set_typval()
    m_ra = st(); 
    m_dec = lat(); 
    
-   next_ra = m_ra;
-   next_dec = m_dec;
+   m_next_ra = m_ra;
+   m_next_dec = m_dec;
    
-   mx::astro::calcAzEl(az, el, st()-m_ra, m_dec, m_lat);
+   mx::astro::calcAzEl(m_az, m_el, st()-m_ra, m_dec, m_lat);
    epoch = 2000.0;
    airmass = 1.0; 
    telfocus = 1725; 
@@ -717,58 +771,77 @@ double magtelescope::dec(bool nocalc)
 }
 
 inline
-void magtelescope::set_next_ra(double r)
+double magtelescope::next_ra()
 {
-   next_ra = r;
+   return m_next_ra;
+}
+
+inline
+int magtelescope::next_ra(double r)
+{
+   m_next_ra = r;
 	calc_next_az_el();
    
    snprintf(lmsg, lmsg_size, "Set next ra: %f", r);
    TELLOG(lmsg);
-}
-
-inline
-void magtelescope::set_off_ra(double r)
-{
-   off_ra = r;
    
-   snprintf(lmsg, lmsg_size, "Set ra offset: %f", r);
-   TELLOG(lmsg);
+   return 0;
 }
 
 inline
-double magtelescope::get_off_ra()
+double magtelescope::next_dec()
 {
-	return off_ra;
+   return m_next_dec;
 }
-	
+
 inline
-void magtelescope::set_next_dec(double d)
+int magtelescope::next_dec(double d)
 {
-   next_dec = d;
+   m_next_dec = d;
    calc_next_az_el();
    snprintf(lmsg, lmsg_size, "Set next dec: %f", d);
    TELLOG(lmsg);
+   
+   return 0;
 }
 
 inline
-void magtelescope::set_off_dec(double d)
+double magtelescope::off_ra()
 {
-   off_dec = d;
+	return m_off_ra;
+}
+
+inline
+int magtelescope::off_ra(double r)
+{
+   m_off_ra = r;
+   
+   snprintf(lmsg, lmsg_size, "Set ra offset: %f", r);
+   TELLOG(lmsg);
+   
+   return 0;
+}
+
+inline
+double magtelescope::off_dec()
+{
+   return m_off_dec;
+}
+
+inline
+int magtelescope::off_dec(double d)
+{
+   m_off_dec = d;
    
    snprintf(lmsg, lmsg_size, "Set dec offset: %f", d);
    TELLOG(lmsg);
 }
 
-inline
-double magtelescope::get_off_dec()
-{
-   return off_dec;
-}
 
 inline
 void magtelescope::set_az(double a)
 {
-   az = a;
+   m_az = a;
    calc_ra_dec(true);
 
    snprintf(lmsg, lmsg_size, "Set az: %f", a);
@@ -787,13 +860,13 @@ double magtelescope::get_az(bool nocalc)
    {
       slew_az_el();
    }
-   return az;
+   return m_az;
 }
 
 inline
 void magtelescope::set_el(double e)
 {
-   el = e;
+   m_el = e;
    calc_ra_dec(true);
 
    snprintf(lmsg, lmsg_size, "Set el: %f", e);
@@ -811,7 +884,7 @@ double magtelescope::get_el(bool nocalc)
    {
       slew_az_el();
    }
-   return el;
+   return m_el;
 }
 
 inline
@@ -836,7 +909,7 @@ inline
 double magtelescope::get_next_ha()
 {
    double nha;
-   nha = fmod(st()-get_next_ra(), 24.0);
+   nha = fmod(st()-next_ra(), 24.0);
    if(nha < 0.0) nha += 24.0;
    return nha;
 }
@@ -870,8 +943,8 @@ double magtelescope::get_pa()
 inline
 double magtelescope::get_next_pa()
 {
-   return mx::astro::parAngDeg(m_lat, get_next_dec(), -get_next_ha()/24.*360.);
-   //return sin(get_next_az()*3.14159/180.)*cos(m_lat*3.14149/180.)/cos(get_next_dec()*3.14149/180.)*180./3.14159;
+   return mx::astro::parAngDeg(m_lat, next_dec(), -get_next_ha()/24.*360.);
+   //return sin(get_next_az()*3.14159/180.)*cos(m_lat*3.14149/180.)/cos(next_dec()*3.14149/180.)*180./3.14159;
 }
 
 inline
@@ -1015,8 +1088,8 @@ int magtelescope::calc_az_el(bool nocalc)
 
    el_rad = asin(sin(lat_rad)*sin(dec_rad) + cos(lat_rad)*cos(dec_rad)*cos(ha_rad));
 
-   az = az_rad*180.0/PI + 180.0;
-   el = el_rad*180.0/PI;
+   m_az = az_rad*180.0/PI + 180.0;
+   m_el = el_rad*180.0/PI;
 
    return 0;
 }
@@ -1027,7 +1100,7 @@ int magtelescope::calc_next_az_el()
    double ha_rad, dec_rad, lat_rad, az_rad, el_rad;
 
    ha_rad = get_next_ha()*15.0*PI/180.0;
-   dec_rad = next_dec*PI/180.0;
+   dec_rad = m_next_dec*PI/180.0;
    lat_rad = lat()*PI/180.0;
 
    az_rad = atan2(sin(ha_rad), cos(ha_rad)*sin(lat_rad)-tan(dec_rad)*cos(lat_rad));
@@ -1192,8 +1265,8 @@ int magtelescope::offset_slew(int dir)
    if(dir >= 0) dir = 1;
    else dir = -1;
    
-   next_ra = ra(false) + dir*(off_ra/3600.)/15.;
-   next_dec = dec(false) + dir*(off_dec/3600.);
+   m_next_ra = ra(false) + dir*(m_off_ra/3600.)/15.;
+   m_next_dec = dec(false) + dir*(m_off_dec/3600.);
    return start_slew();
 }
 
@@ -1206,8 +1279,8 @@ int magtelescope::slew_az_el()
 
    calc_ra_dec(1);
 
-   //std::cout << next_ra << " " << ra << "\n";
-   if(fabs(next_ra - m_ra) < 1e-5 && fabs(next_dec - m_dec) < 1e-5) 
+   //std::cout << m_next_ra << " " << ra << "\n";
+   if(fabs(m_next_ra - m_ra) < 1e-5 && fabs(m_next_dec - m_dec) < 1e-5) 
    {
       slewing = 0;
       tracking = was_tracking;
@@ -1230,7 +1303,7 @@ int magtelescope::slew_az()
    dtacc = az_rate/az_accel;
    
    calc_next_az_el();
-   az_rem = fabs(next_az - az);
+   az_rem = fabs(next_az - m_az);
 
    
    if(az_lastt == 0)
@@ -1256,16 +1329,16 @@ int magtelescope::slew_az()
       curr_az_rate = curr_az_rate + dt*az_accel;
       if(curr_az_rate > az_rate) curr_az_rate = az_rate;
    }
-   if((next_az-az)*curr_az_rate < 0) curr_az_rate*=-1;
+   if((next_az-m_az)*curr_az_rate < 0) curr_az_rate*=-1;
    
    //std::cout << "curr_az_rate=" << curr_az_rate << " az_rate=" << az_rate << " ";
-   az = az + dt*curr_az_rate;
-   az_rem = fabs(next_az-az);
+   m_az = m_az + dt*curr_az_rate;
+   az_rem = fabs(next_az-m_az);
    //std::cout << "az_rem=" << az_rem << " dazacc=" << .5*az_accel*dtacc*dtacc << "\n";
    
    if((az_rem < .5*az_accel*dtacc*dtacc && az_rem < 0.5*init_az_rem && fabs(curr_az_rate) < 0.01) || init_az_rem < .002)
    {
-      az = next_az;
+      m_az = next_az;
    }
    
    az_lastt = currt;
@@ -1287,7 +1360,7 @@ int magtelescope::slew_el()
    dtel = el_rate/el_accel;
    
    calc_next_az_el();
-   el_rem = fabs(next_el - el);
+   el_rem = fabs(next_el - m_el);
 
    if(el_lastt == 0)
    {
@@ -1307,14 +1380,14 @@ int magtelescope::slew_el()
       curr_el_rate = curr_el_rate + dt*el_accel;
       if(curr_el_rate > el_rate) curr_el_rate = el_rate;
    }
-   if((next_el-el)*curr_el_rate < 0) curr_el_rate*=-1;
+   if((next_el-m_el)*curr_el_rate < 0) curr_el_rate*=-1;
       
-   el = el + dt*curr_el_rate;
-   el_rem = fabs(next_el-el);
+   m_el = m_el + dt*curr_el_rate;
+   el_rem = fabs(next_el-m_el);
    
    if((el_rem < .5*el_accel*dtel*dtel && el_rem < 0.5*init_el_rem && fabs(curr_el_rate) < 0.01) || init_el_rem < .002)
    {
-      el = next_el;
+      m_el = next_el;
    }
    //std::cout << "curr_el_rate=" << curr_el_rate << " el_rate=" << el_rate << " ";
    //std::cout << "el_rem=" << el_rem << " delacc=" << .5*el_accel*dtel*dtel << "\n";
@@ -1413,50 +1486,64 @@ int magtelescope::move_rot()
 }
 
 inline
-int magtelescope::process_string(char * inpstr, FILE *fp, bool statonly)
+int magtelescope::process_string( char * inpstr, 
+                                  int ssz,
+                                  FILE *fp, 
+                                  bool statonly
+                                )
 {
-   char response[100];
-   
+   char response[MAGTCS_RESP_SIZE];
+
    pthread_mutex_lock(&comMutex);
 
+   //Do a safety check to make sure strlen will work as defined.
+   inpstr[ssz-1] = '\0';
    
-   if(inpstr[strlen(inpstr)-1]==13) inpstr[strlen(inpstr)-1] = '\0'; //from telnet
+   if(inpstr[strlen(inpstr)-1]==13) inpstr[strlen(inpstr)-1] = '\0'; //possibly from telnet
 
+   //If it has a space, process it like a command
    if(strchr(inpstr, ' ') > 0)
    {
       printf ("Command received: %s.\n", inpstr);
 
       if(strncmp(inpstr, "tcssim", 6) == 0)
       {
-         if(strlen(inpstr) < 8) return -1;
+         if(strlen(inpstr) < 8) 
+         {
+            std::cout << "Incomplete commmand received.\n";
+         
+            strncpy(response, "-1", MAGTCS_RESP_SIZE);
 
+            tcs_fputs(response, fp);
+         
+         }
+         
          if(strncmp(inpstr+7, "quit", 4) == 0)
          {
             exit(0);
          }
       }
-
-      if(statonly)
+      else if(statonly)
       {
-         std::cout << "This is the status only port.\n";
+         std::cout << "This is a status only port.\n";
          
-         pthread_mutex_unlock(&comMutex);
+         strncpy(response, "-1", MAGTCS_RESP_SIZE);
          
-         return -1;
+         tcs_fputs(response, fp);         
       }
-      process_command(response, inpstr);
-      
-      tcs_fputs(response, fp);
+      else
+      {
+         process_command(response, inpstr);
+         tcs_fputs(response, fp);
+      }
    }
    else
    {
       printf ("Status request received: %s.\n", inpstr);
 
-      get_status(response, inpstr, 100);
+      get_status(response, MAGTCS_RESP_SIZE, inpstr);
 
       tcs_fputs(response, fp);
-
-      sprintf(response, "%s\n", response);
    }
 
    lastcom.push_back(inpstr);
@@ -1522,7 +1609,10 @@ int magtelescope::process_command(char * response, std::string inpstr)
 }
 
 inline
-int magtelescope::get_status(char *status, char *cmd_str, int statlen)
+int magtelescope::get_status( char *status,
+                              int statlen,
+                              char *cmd_str
+                            )
 {
    int cmd_N;
 
@@ -1534,21 +1624,16 @@ int magtelescope::get_status(char *status, char *cmd_str, int statlen)
    {
       cmd_N = -1;
    }
-   
-   return get_status(status, cmd_N, statlen);
-}
 
-inline
-int magtelescope::get_status(char *status, int cmd_N, int statlen)
-{
-   int tmpdate[3];
-   double tmparr[3];;
-   
    if(cmd_N < 0)
    {
       strncpy(status, "-1", statlen);
       return -1;
    }
+
+   
+   int tmpdate[3];
+   double tmparr[3];;
    
    //Adjust for synonyms
    if(cmd_N == TELUT_N) cmd_N = UT_N;
@@ -1567,7 +1652,7 @@ int magtelescope::get_status(char *status, int cmd_N, int statlen)
       {
          if(statlen < 11)
          {
-            fprintf(stderr, "Status string not long enough for m_dateobs.\n");
+            fprintf(stderr, "Status string not long enough for dateobs.\n");
             strncpy(status, "-1", statlen);
             return -2;
          }
@@ -1639,7 +1724,7 @@ int magtelescope::get_status(char *status, int cmd_N, int statlen)
             strncpy(status, "-1", statlen);
             return -2;
          }
-         deg2dms(tmparr, get_next_ra());
+         deg2dms(tmparr, next_ra());
          if(mts_format_time_doub(status, tmparr) != 0)
          {
             fprintf(stderr, "INPRA_N mts_format_time_doub returned error.\n");
@@ -1673,7 +1758,7 @@ int magtelescope::get_status(char *status, int cmd_N, int statlen)
             strncpy(status, "-1", statlen);
             return -2;
          }
-         deg2dms(tmparr, get_next_dec());
+         deg2dms(tmparr, next_dec());
          if(mts_format_time_doub(status, tmparr) != 0)
          {
             fprintf(stderr, "mts_format_time_doub returned error.\n");
@@ -2277,7 +2362,7 @@ int magtelescope::do_command(int cmd_N, std::vector<std::string> args)
 
          double nra = atof(args[0].c_str()) +atof(args[1].c_str())/60. + atof(args[2].c_str())/3600.;
          nra = nra;//*PI/180.;
-         set_next_ra(nra);
+         next_ra(nra);
          return 0;
       }
       case DEC_N:
@@ -2301,7 +2386,7 @@ int magtelescope::do_command(int cmd_N, std::vector<std::string> args)
          else ndec += atof(args[2].c_str())/3600.;
 
          ndec = ndec;// * PI/180.;
-         set_next_dec(ndec);
+         next_dec(ndec);
          return 0;
       }
       case SLEW_N:
@@ -2346,7 +2431,7 @@ int magtelescope::do_command(int cmd_N, std::vector<std::string> args)
 
          TELLOG(logstr.c_str());
 
-         set_off_ra(atof(args[0].c_str()));
+         off_ra(atof(args[0].c_str()));
          return 0;
       }
       case OFDC_N:
@@ -2363,7 +2448,7 @@ int magtelescope::do_command(int cmd_N, std::vector<std::string> args)
 
          TELLOG(logstr.c_str());
 
-         set_off_dec(atof(args[0].c_str()));
+         off_dec(atof(args[0].c_str()));
          return 0;
       }
       case OFFP_N:
