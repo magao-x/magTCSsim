@@ -63,9 +63,9 @@ class magtelescope
 {
    
 protected:
-   double m_lon;      ///< The telescope longitude [degrees].
-   double m_lat;      ///< The telescope latitude [degrees].
-   int m_dateobs[3];  ///< The broken down universal date [YYYY, MM, DD].
+   double m_lon {-29.015};      ///< The telescope longitude [degrees].
+   double m_lat {-70.69166667};      ///< The telescope latitude [degrees].
+   int m_dateobs[3] {0,0,0};  ///< The broken down universal date [YYYY, MM, DD].
    double m_ut {0};   ///< The current universal time [hrs].
    double m_ra {0};   ///< The current right ascension, hours
    double m_dec {0};  ///< The current declination, degrees
@@ -79,42 +79,42 @@ protected:
    double m_az {0};       ///< azimuth, east of north, degrees
    double m_el {0};       ///< elevation, degrees
    
-   double next_az;  ///< The next value of azimuth, which will be slewed to.
-   double next_el;  ///< The next value of elevatoin, which will be slewed to.
+   double m_next_az {0};  ///< The next value of azimuth, which will be slewed to.
+   double m_next_el {0};  ///< The next value of elevation, which will be slewed to.
    
-   double epoch;    ///< coordinate epoch
-   double airmass;  ///< the current airmass
+   double m_epoch {0};    ///< coordinate epoch
+   double m_airmass {0};  ///< the current airmass
 
-   int telfocus;    ///< Focus, or z, position of the 2ndary mirror.
-   int telx;        ///< X position of the 2ndary mirror.
-   int tely;        ///< Y position of the 2ndary mirror.
-   double telh;     ///< H angle of the 2ndary mirror.
-   double telv;     ///< V angle of the 2ndary mirror.
+   int m_telfocus {0};    ///< Focus, or z, position of the 2ndary mirror.
+   int m_telx {0};        ///< X position of the 2ndary mirror.
+   int m_tely {0};        ///< Y position of the 2ndary mirror.
+   double m_telh {0};     ///< H angle of the 2ndary mirror.
+   double m_telv {0};     ///< V angle of the 2ndary mirror.
    
    //int secx;
    //int secy;
 
-   int roi;              ///< The rotator of interest
-   double rotangle;      ///< The rotator angle
-   double next_rotangle; ///< The next rotator angle to slew to.
+   int m_roi {0};              ///< The rotator of interest
+   double m_rotangle {0};      ///< The rotator angle
+   double m_next_rotangle {0}; ///< The next rotator angle to slew to.
    
-   double rotenc;        ///< The rotator encoder angle
+   double m_rotenc {0};        ///< The rotator encoder angle
    
    
 
    //Simulation flags
-   int simulating;  ///< True if simulating.
-   int tracking;    ///< True if telescope tracking.
-   int rottracking; ///< True if rotator tracking (following).
+   int m_simulating {0};  ///< True if simulating.
+   int m_tracking {0};    ///< True if telescope tracking.
+   int m_rottracking {0}; ///< True if rotator tracking (following).
 
-   int slewing;      ///< 1 if currently slewing
-   int was_tracking; ///< to reset tracking after slewing
+   int m_slewing {0};      ///< 1 if currently slewing
+   int m_was_tracking {0}; ///< to reset tracking after slewing
 
-   int guiding;     ///< 1 if guiding - just a flag, doesn't do anything here.
-   int was_guiding; ///< to reset to guiding after slewing
+   int m_guiding {0};     ///< 1 if guiding - just a flag, doesn't do anything here.
+   int m_was_guiding {0}; ///< to reset to guiding after slewing
    
-   int rotmode; ///< 1 if following
-   int rotwas_following; ///< to reset to following after slewing
+   int m_rotmode {0}; ///< 1 if following
+   int m_rotwas_following {0}; ///< to reset to following after slewing
 
    //Simulation time hacks
    double simstart;
@@ -139,7 +139,7 @@ protected:
    double curr_el_rate;
    double el_lastt;
 
-   double rotslewing;
+   double m_rotslewing {0};
    double rotrate;
    double init_rotangle;
    double rotmovesz;
@@ -294,15 +294,39 @@ public:
      */
    int off_dec(double d /**< [in] the new value of off_dec */);   
    
-	
-  
+   
+   /// Get the current value of azimuth
+   /** The nocalc flag determines whether azimuth is updated based on simulation tracking. 
+     * 
+     * \returns the current value of m_az.
+     */
+   double az( bool nocalc = false /**< [in] [optional] flag to control whether the azimuth is recalculated.*/);
 
-   void set_az(double a /**< [in] the new value of */);
-   double get_az(bool nocalc = false);
+   /// Set the value of azimuth.
+   /**
+     * \returns 0 on success.
+     * \returns -1 on error.
+     */
+   int az(double a /**< [in] the new value of azimuth*/);
+   
+   /// Get the current value of elevation
+   /** The nocalc flag determines whether elevation is updated based on simulation tracking. 
+     * 
+     * \returns the current value of m_el.
+     */
+   double el( bool nocalc = false /**< [in] [optional] flag to control whether the elevation is recalculated.*/);
 
-   void set_el(double e /**< [in] the new value of */);
-   double get_el(bool nocalc = false);
-
+   /// Set the value of elevaton.
+   /**
+     * \returns 0 on success.
+     * \returns -1 on error.
+     */
+   int el( double e /**< [in] the new value of elevation*/);
+   
+   
+   
+   
+   
    int set_ra_dec(double nra, 
                   double ndec);
    
@@ -325,20 +349,20 @@ public:
    double get_wxdir();
    
    
-   int get_telfocus(){return telfocus;}    //= 001725
+   int get_telfocus(){return m_telfocus;}    //= 001725
    int get_telz(){return get_telfocus();}
    void set_telfocus(int tf);
    
-   int get_telx(){return telx;}
+   int get_telx(){return m_telx;}
    void set_telx(int tx /**< [in] the new value of */);
    
-   int get_tely(){return tely;}
+   int get_tely(){return m_tely;}
    void set_tely(int ty /**< [in] the new value of */);
    
-   double get_telh(){return telh;}
+   double get_telh(){return m_telh;}
    void set_telh(double th /**< [in] the new value of */);
    
-   double get_telv(){return telv;}
+   double get_telv(){return m_telv;}
    void set_telv(double tv /**< [in] the new value of */);
    
    /*int get_secx(){return secx;}
@@ -347,12 +371,12 @@ public:
    int get_secy(){return secy;}
    void set_secy(int sy);*/
 
-   int get_roi(){return roi;}
+   int get_roi(){return m_roi;}
    
    double get_rotangle(); //returns the current rotator angle, relative to N
    double get_rotenc(); //returns the current rotator encoder angle.
    
-   double get_next_rotangle(){return next_rotangle;}
+   double get_next_rotangle(){return m_next_rotangle;}
    int set_next_rotangle(double nr /**< [in] the new value of */);
    
    
@@ -360,9 +384,9 @@ public:
    //Calculates current azimuth and elevation given sidereal time, RA, and Dec.
    //Reference: J. Meeus "Astronomical Algorithms", 1991.
    int calc_az_el(bool nocalc = false);
-   int calc_next_az_el();
-   double get_next_az(){return next_az;}
-   double get_next_el(){return next_el;}
+   int calc_m_next_az_el();
+   double get_next_az(){return m_next_az;}
+   double get_next_el(){return m_next_el;}
 
    //Calculates current RA and DEC, given Az, El, and sidereal time.
    //Reference: J. Meeus "Astronomical Algorithms", 1991.
@@ -371,23 +395,23 @@ public:
    //Simulation control.
    int start_simulating();
    int stop_simulating();
-   int get_simulating() {return simulating;}
+   int get_simulating() {return m_simulating;}
    int reset_simulation();
    
    //Tracking in RA and DEC
    int start_tracking();
    int stop_tracking();
-   int get_tracking() {return tracking;}
+   int get_tracking() {return m_tracking;}
 
    //Guiding
    int start_guiding();
    int stop_guiding();
-   int get_guiding() {return guiding;}
+   int get_guiding() {return m_guiding;}
 
    //Rotator following
    int start_following();
    int stop_following();
-   int get_rotmode() {return rotmode;}
+   int get_rotmode() {return m_rotmode;}
    
    //Slewing
    int start_slew();
@@ -396,13 +420,13 @@ public:
    int slew_az_el();
    int slew_az();
    int slew_el();
-   int get_slewing() {return (slewing);}
+   int get_slewing() {return (m_slewing);}
 
    //Rotator moves
    int start_rotmove();
    int move_rot();
    int stop_rotmove();
-   int get_rotslewing(){ return rotslewing;}
+   int get_rotslewing(){ return m_rotslewing;}
    
    
    //Interface
@@ -454,35 +478,11 @@ public:
 inline
 magtelescope::magtelescope()
 {
-   loadCommands();   //st = 0.0;
-   
-   for(int i=0;i<3;i++) m_dateobs[i] = 0;
-
-
-   epoch = 0;
-   airmass = 0;
-   
-   telfocus = 0;
-   telx = 0;
-   tely = 0;
-   telh = 0;
-   telv = 0;
-
-   roi = 0;
-   rotangle = 0;
-   next_rotangle = 0;
-
-   //These values set so calcs match typvals of sidereal time and zd.
-   m_lat = -29.015; //degrees
-   m_lon = -70.69166667; // degrees
+   loadCommands();   
 
    //Simulation flags
-   simulating = 0;
-   tracking = 0;
-   guiding = 0;
-   slewing = 0;
-   rotmode = 0;
-   rotslewing = 0;
+  
+
 
    //Simulation time hacks
    simstart = 0;
@@ -658,16 +658,16 @@ void magtelescope::set_typval()
    m_next_dec = m_dec;
    
    mx::astro::calcAzEl(m_az, m_el, st()-m_ra, m_dec, m_lat);
-   epoch = 2000.0;
-   airmass = 1.0; 
-   telfocus = 1725; 
-   telx = 10;
-   tely = -10;
-   telh = 1.24;
-   telv = -2.34;
+   m_epoch = 2000.0;
+   m_airmass = 1.0; 
+   m_telfocus = 1725; 
+   m_telx = 10;
+   m_tely = -10;
+   m_telh = 1.24;
+   m_telv = -2.34;
 
-   rotangle = 0;
-   rotenc = 0;
+   m_rotangle = 0;
+   m_rotenc = 0;
 
    TELLOG("Set typical values.");
 }
@@ -735,7 +735,7 @@ double magtelescope::st()
 inline
 double magtelescope::ra(bool nocalc)
 {
-   if(!tracking && !nocalc) calc_ra_dec();
+   if(!m_tracking && !nocalc) calc_ra_dec();
    return m_ra;
 }
 
@@ -766,7 +766,7 @@ int magtelescope::dec(double d)
 inline
 double magtelescope::dec(bool nocalc)
 {
-   if(!tracking && !nocalc) calc_ra_dec();
+   if(!m_tracking && !nocalc) calc_ra_dec();
    return m_dec;
 }
 
@@ -780,7 +780,7 @@ inline
 int magtelescope::next_ra(double r)
 {
    m_next_ra = r;
-	calc_next_az_el();
+	calc_m_next_az_el();
    
    snprintf(lmsg, lmsg_size, "Set next ra: %f", r);
    TELLOG(lmsg);
@@ -798,7 +798,7 @@ inline
 int magtelescope::next_dec(double d)
 {
    m_next_dec = d;
-   calc_next_az_el();
+   calc_m_next_az_el();
    snprintf(lmsg, lmsg_size, "Set next dec: %f", d);
    TELLOG(lmsg);
    
@@ -837,26 +837,14 @@ int magtelescope::off_dec(double d)
    TELLOG(lmsg);
 }
 
-
 inline
-void magtelescope::set_az(double a)
+double magtelescope::az(bool nocalc)
 {
-   m_az = a;
-   calc_ra_dec(true);
-
-   snprintf(lmsg, lmsg_size, "Set az: %f", a);
-   TELLOG(lmsg);
-}
-
-inline
-double magtelescope::get_az(bool nocalc)
-{
-   //std::cout << "get_az slewing = " << slewing << "\n";
-   if(tracking && !nocalc && !slewing) 
+   if(m_tracking && !nocalc && !m_slewing) 
    {
       calc_az_el();
    }
-   else if(slewing && !nocalc)
+   else if(m_slewing && !nocalc)
    {
       slew_az_el();
    }
@@ -864,28 +852,43 @@ double magtelescope::get_az(bool nocalc)
 }
 
 inline
-void magtelescope::set_el(double e)
+int magtelescope::az(double a)
+{
+   m_az = a;
+   calc_ra_dec(true);
+
+   snprintf(lmsg, lmsg_size, "Set az: %f", a);
+   TELLOG(lmsg);
+   
+   return 0;
+}
+
+inline
+double magtelescope::el(bool nocalc)
+{
+   if(m_tracking && !nocalc && !m_slewing) 
+   {
+      calc_az_el();
+   }
+   else if(m_slewing && !nocalc)
+   {
+      slew_az_el();
+   }
+   return m_el;
+}
+
+inline
+int magtelescope::el(double e)
 {
    m_el = e;
    calc_ra_dec(true);
 
    snprintf(lmsg, lmsg_size, "Set el: %f", e);
    TELLOG(lmsg);
+   
+   return 0;
 }
 
-inline
-double magtelescope::get_el(bool nocalc)
-{
-   if(tracking && !nocalc && !slewing) 
-   {
-      calc_az_el();
-   }
-   else if(slewing && !nocalc)
-   {
-      slew_az_el();
-   }
-   return m_el;
-}
 
 inline
 int magtelescope::set_ra_dec(double nra, double ndec)
@@ -917,7 +920,7 @@ double magtelescope::get_next_ha()
 inline
 double magtelescope::get_epoch()
 {
-   return epoch;
+   return m_epoch;
 }
 
 inline
@@ -929,7 +932,7 @@ double magtelescope::get_airmass()
 inline
 double magtelescope::get_zd()
 {
-   return 90.0 - get_el();
+   return 90.0 - el();
 }
 
 inline
@@ -944,7 +947,7 @@ inline
 double magtelescope::get_next_pa()
 {
    return mx::astro::parAngDeg(m_lat, next_dec(), -get_next_ha()/24.*360.);
-   //return sin(get_next_az()*3.14159/180.)*cos(m_lat*3.14149/180.)/cos(next_dec()*3.14149/180.)*180./3.14159;
+   //return sin(get_m_next_az()*3.14159/180.)*cos(m_lat*3.14149/180.)/cos(next_dec()*3.14149/180.)*180./3.14159;
 }
 
 inline
@@ -980,7 +983,7 @@ double magtelescope::get_wxdir()
 inline
 void magtelescope::set_telfocus(int tf)
 {
-   telfocus = tf;
+   m_telfocus = tf;
    
    snprintf(lmsg, lmsg_size, "Set telfocus: %i", tf);
    TELLOG(lmsg);
@@ -989,7 +992,7 @@ void magtelescope::set_telfocus(int tf)
 inline
 void magtelescope::set_telx(int tx)
 {
-   telx = tx;
+   m_telx = tx;
    
    snprintf(lmsg, lmsg_size, "Set telx: %i", tx);
    TELLOG(lmsg);
@@ -998,7 +1001,7 @@ void magtelescope::set_telx(int tx)
 inline
 void magtelescope::set_tely(int ty)
 {
-   tely = ty;
+   m_tely = ty;
    
    snprintf(lmsg, lmsg_size, "Set tely: %i", ty);
    TELLOG(lmsg);
@@ -1007,7 +1010,7 @@ void magtelescope::set_tely(int ty)
 inline
 void magtelescope::set_telh(double th)
 {
-   telh = th;
+   m_telh = th;
    
    snprintf(lmsg, lmsg_size, "Set telh: %f", th);
    TELLOG(lmsg);
@@ -1016,7 +1019,7 @@ void magtelescope::set_telh(double th)
 inline
 void magtelescope::set_telv(double tv)
 {
-   telv = tv;
+   m_telv = tv;
    
    snprintf(lmsg, lmsg_size, "Set telv: %f", tv);
    TELLOG(lmsg);
@@ -1040,16 +1043,16 @@ void magtelescope::set_telv(double tv)
 inline
 double magtelescope::get_rotangle()
 {
-   if(rotslewing) move_rot();
+   if(m_rotslewing) move_rot();
    
-   if(rotmode || rotslewing)
+   if(m_rotmode || m_rotslewing)
    {
-      return rotangle;
+      return m_rotangle;
    }
    else
    {
-      rotangle = rotenc - get_pa();
-      return rotangle;
+      m_rotangle = m_rotenc - get_pa();
+      return m_rotangle;
    }
 
 }
@@ -1057,21 +1060,21 @@ double magtelescope::get_rotangle()
 inline
 double magtelescope::get_rotenc()
 {
-   if(rotslewing) move_rot();
+   if(m_rotslewing) move_rot();
    
-   if(rotmode || rotslewing)
+   if(m_rotmode || m_rotslewing)
    {
-      rotenc = rotangle + get_pa(); 
+      m_rotenc = m_rotangle + get_pa(); 
    }
 
-   return rotenc;
+   return m_rotenc;
    
 }
 
 inline
 int magtelescope::set_next_rotangle(double nr)
 {
-   next_rotangle = nr;
+   m_next_rotangle = nr;
    return 0;
 }
 
@@ -1095,7 +1098,7 @@ int magtelescope::calc_az_el(bool nocalc)
 }
 
 inline
-int magtelescope::calc_next_az_el()
+int magtelescope::calc_m_next_az_el()
 {
    double ha_rad, dec_rad, lat_rad, az_rad, el_rad;
 
@@ -1107,8 +1110,8 @@ int magtelescope::calc_next_az_el()
 
    el_rad = asin(sin(lat_rad)*sin(dec_rad) + cos(lat_rad)*cos(dec_rad)*cos(ha_rad));
 
-   next_az = az_rad*180.0/PI+ 180.0;
-   next_el = el_rad*180.0/PI;
+   m_next_az = az_rad*180.0/PI+ 180.0;
+   m_next_el = el_rad*180.0/PI;
 
    return 0;
 }
@@ -1118,9 +1121,9 @@ int magtelescope::calc_ra_dec(bool nocalc)
 {
    double az_rad, lat_rad, el_rad, ha_rad, dec_rad;
 
-   az_rad = (get_az(nocalc)-180.0)*PI/180.0;
+   az_rad = (az(nocalc)-180.0)*PI/180.0;
    lat_rad = lat()*PI/180.0;
-   el_rad = get_el(nocalc)*PI/180.0;
+   el_rad = el(nocalc)*PI/180.0;
 
    ha_rad = atan2(sin(az_rad), cos(az_rad)*sin(lat_rad)+tan(el_rad)*cos(lat_rad));
    dec_rad = asin(sin(lat_rad)*sin(el_rad) - cos(lat_rad)*cos(el_rad)*cos(az_rad));
@@ -1138,7 +1141,7 @@ inline
 int magtelescope::start_simulating()
 {
    timeval stime;
-   simulating = 1;
+   m_simulating = 1;
 
    gettimeofday(&stime, 0);
 
@@ -1148,7 +1151,7 @@ int magtelescope::start_simulating()
       simstart = stime.tv_sec+(stime.tv_usec/1000000.0);
    }*/
 
-   if(tracking == 1)
+   if(m_tracking == 1)
    {
       if(trackstart == 0)
       {
@@ -1162,7 +1165,7 @@ int magtelescope::start_simulating()
 inline
 int magtelescope::stop_simulating()
 {
-   simulating = 0;
+   m_simulating = 0;
    return 0;
 }
 
@@ -1172,7 +1175,7 @@ int magtelescope::reset_simulation()
    simstart = 0;
    trackstart = 0;
 
-   if(simulating) start_simulating();
+   if(m_simulating) start_simulating();
 
    return 0;
 }
@@ -1181,8 +1184,8 @@ inline
 int magtelescope::start_tracking()
 {
    timeval stime;
-   tracking = 1;
-   was_tracking=1;
+   m_tracking = 1;
+   m_was_tracking=1;
    if(trackstart == 0) 
    {
       gettimeofday(&stime, 0);
@@ -1194,40 +1197,40 @@ int magtelescope::start_tracking()
 inline
 int magtelescope::stop_tracking()
 {
-   tracking = 0;
-   was_tracking = 0;
+   m_tracking = 0;
+   m_was_tracking = 0;
    return 0;
 }
 
 inline
 int magtelescope::start_guiding()
 {
-   guiding = 1;
-   was_guiding=1;
+   m_guiding = 1;
+   m_was_guiding=1;
    return 0;
 }
 
 inline
 int magtelescope::stop_guiding()
 {
-   guiding = 0;
-   was_guiding = 0;
+   m_guiding = 0;
+   m_was_guiding = 0;
    return 0;
 }
 
 inline
 int magtelescope::start_following()
 {
-   rotmode = 1;
-   rotwas_following=1;
+   m_rotmode = 1;
+   m_rotwas_following=1;
    return 0;
 }
 
 inline
 int magtelescope::stop_following()
 {
-   rotmode = 0;
-   rotwas_following=0;
+   m_rotmode = 0;
+   m_rotwas_following=0;
    return 0;
 }
 
@@ -1239,9 +1242,9 @@ int magtelescope::start_slew()
    gettimeofday(&stime, 0);
    slewstart = stime.tv_sec+(stime.tv_usec/1000000.0);
 
-   was_tracking = tracking;
-   tracking = 0;
-   slewing = 1;
+   m_was_tracking = m_tracking;
+   m_tracking = 0;
+   m_slewing = 1;
 
    az_lastt = 0.;
    el_lastt = 0.;
@@ -1253,8 +1256,8 @@ int magtelescope::start_slew()
 inline
 int magtelescope::stop_slew()
 {
-   tracking = was_tracking;
-   slewing = 0;
+   m_tracking = m_was_tracking;
+   m_slewing = 0;
    //std::cout << "slew stopped\n";
    return 0;
 }
@@ -1282,8 +1285,8 @@ int magtelescope::slew_az_el()
    //std::cout << m_next_ra << " " << ra << "\n";
    if(fabs(m_next_ra - m_ra) < 1e-5 && fabs(m_next_dec - m_dec) < 1e-5) 
    {
-      slewing = 0;
-      tracking = was_tracking;
+      m_slewing = 0;
+      m_tracking = m_was_tracking;
    }
    //std::cout << "slewing=" << slewing << "\n";
    return 0;
@@ -1302,8 +1305,8 @@ int magtelescope::slew_az()
    
    dtacc = az_rate/az_accel;
    
-   calc_next_az_el();
-   az_rem = fabs(next_az - m_az);
+   calc_m_next_az_el();
+   az_rem = fabs(m_next_az - m_az);
 
    
    if(az_lastt == 0)
@@ -1314,7 +1317,7 @@ int magtelescope::slew_az()
    
    dt = currt-az_lastt;
    
-   //std::cout << "slew_az " << next_az << " " << az << " " << az_rem << "\n";
+   //std::cout << "slew_az " << m_next_az << " " << az << " " << az_rem << "\n";
    //std::cout << "dtacc=" << dtacc << " dt=" << dt << "\n";
    
    curr_az_rate = fabs(curr_az_rate);
@@ -1329,16 +1332,16 @@ int magtelescope::slew_az()
       curr_az_rate = curr_az_rate + dt*az_accel;
       if(curr_az_rate > az_rate) curr_az_rate = az_rate;
    }
-   if((next_az-m_az)*curr_az_rate < 0) curr_az_rate*=-1;
+   if((m_next_az-m_az)*curr_az_rate < 0) curr_az_rate*=-1;
    
    //std::cout << "curr_az_rate=" << curr_az_rate << " az_rate=" << az_rate << " ";
    m_az = m_az + dt*curr_az_rate;
-   az_rem = fabs(next_az-m_az);
+   az_rem = fabs(m_next_az-m_az);
    //std::cout << "az_rem=" << az_rem << " dazacc=" << .5*az_accel*dtacc*dtacc << "\n";
    
    if((az_rem < .5*az_accel*dtacc*dtacc && az_rem < 0.5*init_az_rem && fabs(curr_az_rate) < 0.01) || init_az_rem < .002)
    {
-      m_az = next_az;
+      m_az = m_next_az;
    }
    
    az_lastt = currt;
@@ -1359,8 +1362,8 @@ int magtelescope::slew_el()
    
    dtel = el_rate/el_accel;
    
-   calc_next_az_el();
-   el_rem = fabs(next_el - m_el);
+   calc_m_next_az_el();
+   el_rem = fabs(m_next_el - m_el);
 
    if(el_lastt == 0)
    {
@@ -1380,14 +1383,14 @@ int magtelescope::slew_el()
       curr_el_rate = curr_el_rate + dt*el_accel;
       if(curr_el_rate > el_rate) curr_el_rate = el_rate;
    }
-   if((next_el-m_el)*curr_el_rate < 0) curr_el_rate*=-1;
+   if((m_next_el-m_el)*curr_el_rate < 0) curr_el_rate*=-1;
       
    m_el = m_el + dt*curr_el_rate;
-   el_rem = fabs(next_el-m_el);
+   el_rem = fabs(m_next_el-m_el);
    
    if((el_rem < .5*el_accel*dtel*dtel && el_rem < 0.5*init_el_rem && fabs(curr_el_rate) < 0.01) || init_el_rem < .002)
    {
-      m_el = next_el;
+      m_el = m_next_el;
    }
    //std::cout << "curr_el_rate=" << curr_el_rate << " el_rate=" << el_rate << " ";
    //std::cout << "el_rem=" << el_rem << " delacc=" << .5*el_accel*dtel*dtel << "\n";
@@ -1405,37 +1408,37 @@ int magtelescope::start_rotmove()
    gettimeofday(&stime, 0);
    rotstart = stime.tv_sec+(stime.tv_usec/1000000.0);
 
-   rotwas_following = rotmode;
+   m_rotwas_following = m_rotmode;
    
-   rotmode = 0;
-   rotslewing = 1;
+   m_rotmode = 0;
+   m_rotslewing = 1;
    
-   init_rotangle = rotangle;
+   init_rotangle = m_rotangle;
    
-   if(next_rotangle > rotangle)
+   if(m_next_rotangle > m_rotangle)
    {
-      if(next_rotangle - rotangle > 180.)
+      if(m_next_rotangle - m_rotangle > 180.)
       {
          rotmovedir = -1;
-         rotmovesz = 360.-(next_rotangle - rotangle);
+         rotmovesz = 360.-(m_next_rotangle - m_rotangle);
       }
       else
       {
          rotmovedir = 1;
-         rotmovesz = next_rotangle -rotangle;
+         rotmovesz = m_next_rotangle - m_rotangle;
       }
    }
    else
    {
-      if(rotangle-next_rotangle > 180.)
+      if(m_rotangle-m_next_rotangle > 180.)
       {
          rotmovedir = 1;
-         rotmovesz = 360. - (rotangle - next_rotangle);
+         rotmovesz = 360. - (m_rotangle - m_next_rotangle);
       }
       else
       {
          rotmovedir = -1;
-         rotmovesz = rotangle-next_rotangle;
+         rotmovesz = m_rotangle - m_next_rotangle;
       }
    }
 
@@ -1449,9 +1452,9 @@ int magtelescope::stop_rotmove()
    move_rot(); //move it one bit more.
    
    
-   rotmode = rotwas_following;
+   m_rotmode = m_rotwas_following;
    
-   rotslewing = 0;
+   m_rotslewing = 0;
    
    
    //std::cout << "rotator move stopped\n";
@@ -1472,15 +1475,15 @@ int magtelescope::move_rot()
 
    if(drotang >= rotmovesz)
    {
-      rotangle = next_rotangle;
-      rotmode = rotwas_following;
-      rotslewing = 0;
+      m_rotangle = m_next_rotangle;
+      m_rotmode = m_rotwas_following;
+      m_rotslewing = 0;
    }
    else
    {
-      rotangle = init_rotangle + rotmovedir*drotang;
-      if(rotangle < 0) rotangle = rotangle + 360;
-      if(rotangle >= 360) rotangle = rotangle - 360;
+      m_rotangle = init_rotangle + rotmovedir*drotang;
+      if(m_rotangle < 0) m_rotangle = m_rotangle + 360;
+      if(m_rotangle >= 360) m_rotangle = m_rotangle - 360;
    }
    return 0;
 }
@@ -1934,7 +1937,7 @@ int magtelescope::get_status( char *status,
             strncpy(status, "-1", statlen);
             return -2;
          }
-         snprintf(status,statlen, "%.4f", get_az());
+         snprintf(status,statlen, "%.4f", az());
          return 0; //success
       }//case TELAZ_N:
       case INPAZ_N:
@@ -1956,7 +1959,7 @@ int magtelescope::get_status( char *status,
             strncpy(status, "-1", statlen);
             return -2;
          }
-         snprintf(status,statlen, "%.4f", get_el());
+         snprintf(status,statlen, "%.4f", el());
          return 0; //success
       }//case TELEL_N:
       case INPEL_N:
@@ -1978,7 +1981,7 @@ int magtelescope::get_status( char *status,
             strncpy(status, "-1", statlen);
             return -2;
          }
-         snprintf(status, statlen, "%i", (int)get_az());
+         snprintf(status, statlen, "%i", (int) az());
          return 0;
       }
       case DMSTAT_N:
@@ -2170,7 +2173,7 @@ int magtelescope::get_status( char *status,
          }
 
 
-         snprintf(status,statlen, "%1d %i%i %i00 %.4f %.4f %.6f %.4f %i %i", get_roi(), get_tracking(), get_guiding(), get_slewing(),get_az(), get_el(), get_zd(), get_pa(), (int)get_az(), 1);
+         snprintf(status,statlen, "%1d %i%i %i00 %.4f %.4f %.6f %.4f %i %i", get_roi(), get_tracking(), get_guiding(), get_slewing(), az(), el(), get_zd(), get_pa(), (int) az(), 1);
 
          return 0;
          
@@ -2497,8 +2500,8 @@ int magtelescope::do_command(int cmd_N, std::vector<std::string> args)
 
          TELLOG(logstr.c_str());
 
-         set_az(get_az(false) + strtod(args[0].c_str(),0)/3600.);
-         set_el(get_el(false) + strtod(args[1].c_str(),0)/3600.);
+         az( az(false) + strtod(args[0].c_str(),0)/3600.);
+         el( el(false) + strtod(args[1].c_str(),0)/3600.);
          return 0;
       }
       case ZSET_N:
@@ -2533,7 +2536,7 @@ int magtelescope::do_command(int cmd_N, std::vector<std::string> args)
    
          TELLOG(logstr.c_str());
 
-         set_telfocus(telfocus + atoi(args[0].c_str()));
+         set_telfocus(m_telfocus + atoi(args[0].c_str()));
          return 0;
       }
       case XSET_N:
@@ -2566,7 +2569,7 @@ int magtelescope::do_command(int cmd_N, std::vector<std::string> args)
          logstr += logval;
    
          TELLOG(logstr.c_str());
-         set_telx(telx + atoi(args[0].c_str()));
+         set_telx(m_telx + atoi(args[0].c_str()));
          return 0;
       }
       case YSET_N:
@@ -2599,7 +2602,7 @@ int magtelescope::do_command(int cmd_N, std::vector<std::string> args)
          logstr += logval;
    
          TELLOG(logstr.c_str());
-         set_tely(tely + atoi(args[0].c_str()));
+         set_tely(m_tely + atoi(args[0].c_str()));
          return 0;
       }
       case RO_N:
