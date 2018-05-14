@@ -59,6 +59,7 @@
 #define MAGTCS_RESP_SIZE (1024)
 #define MAGTCS_INPUT_SIZE (1024)
 
+///A simulated Magellan Telescope
 class magtelescope
 {
    
@@ -91,17 +92,12 @@ protected:
    double m_telh {0};     ///< H angle of the 2ndary mirror.
    double m_telv {0};     ///< V angle of the 2ndary mirror.
    
-   //int secx;
-   //int secy;
-
    int m_roi {0};              ///< The rotator of interest
    double m_rotangle {0};      ///< The rotator angle
    double m_next_rotangle {0}; ///< The next rotator angle to slew to.
    
    double m_rotenc {0};        ///< The rotator encoder angle
    
-   
-
    //Simulation flags
    int m_simulating {0};  ///< True if simulating.
    int m_tracking {0};    ///< True if telescope tracking.
@@ -111,16 +107,40 @@ protected:
    int m_was_tracking {0}; ///< to reset tracking after slewing
 
    int m_guiding {0};     ///< 1 if guiding - just a flag, doesn't do anything here.
-   int m_was_guiding {0}; ///< to reset to guiding after slewing
+   int m_was_guiding {0}; ///< Flag set to cause a reset to guiding after slewing
    
-   int m_rotmode {0}; ///< 1 if following
-   int m_rotwas_following {0}; ///< to reset to following after slewing
+   int m_rotmode {0}; ///< Current rotator mode. 1 if following
+   int m_rotwas_following {0}; ///< Flag set to cause a reset to following after slewing
 
    //Simulation time hacks
-   double simstart;
-   double trackstart;
-   double slewstart;
-   double rotstart;
+   double m_simstart {0};   ///< Time of simulation start
+   double m_trackstart {0}; ///< Time of tracking start
+   double m_slewstart {0};  ///< Time of slew start
+   double m_rotstart {0};   ///< Time of rotator motion start
+
+   
+   //Simulation motion
+   double m_az_accel {0.1}; ///< Acceleration of the mount in the azimuth direction.
+   double m_az_rate {2.0};  ///< Maximum slew rate of the mount in the azimuth direction.
+   double m_curr_az_rate {0.0}; ///< Current slewing rate of the mount in the az direction.
+   double az_lastt;
+   double m_el_accel {0.1}; ///< Acceleration of the mount in the elevation direction.
+   double m_el_rate {1.0}; ///< Maximum slew rate of the mount in the elevation direction.
+   double m_curr_el_rate {0}; ///< Current slewing rate of the mount in the el direction.
+   double el_lastt;
+
+   double m_rotslewing {0};
+   double m_rotrate {6.0};  ///< The rotator slew rate [deg/sec]
+   double init_rotangle;
+   double rotmovesz;
+   int rotmovedir;
+
+   std::string m_catObj; ///< Catalog object name
+   double m_catRA; ///< Catalog right ascension [degrees]
+   double m_catDC; ///< Catalog declination [degrees]
+   double m_catEP; ///< Catalog epoch
+   double m_catRO; ///< Catalog rotator offset
+   int m_catRM;    ///< Catalog rotator mode
 
    pthread_mutex_t comMutex;
    
@@ -128,29 +148,6 @@ protected:
    
    std::string logstr;
    char logval[50];
-   
-   //Simulation motion
-   double az_accel;
-   double az_rate;
-   double curr_az_rate;
-   double az_lastt;
-   double el_accel;
-   double el_rate;
-   double curr_el_rate;
-   double el_lastt;
-
-   double m_rotslewing {0};
-   double rotrate;
-   double init_rotangle;
-   double rotmovesz;
-   int rotmovedir;
-
-   char tgtname[25];
-   double cat_ra;
-   double cat_dc;
-   double cat_ep;
-   double cat_ro;
-   int cat_rm;
    
    char lmsg[lmsg_size];
    
@@ -480,29 +477,8 @@ magtelescope::magtelescope()
 {
    loadCommands();   
 
-   //Simulation flags
-  
-
-
-   //Simulation time hacks
-   simstart = 0;
-   trackstart = 0;
-   slewstart = 0;
-   rotstart = 0;
-
-   az_accel = 0.1;//*PI/180.;
-   az_rate = 2.;//*PI/180.;
-   curr_az_rate = 0.;
-   el_accel = 0.1;//*PI/180.;
-   el_rate = 1.0;//*PI/180.;
-   curr_el_rate = 0.;
-
-   rotrate = 6; //degrees per second.
-
    char logname[200];
 
-   tgtname[0] = '\0';
-   
    time_t tl;
    tl = time(0);
    strftime(logname, 200, "logs/magtel_%m%d%Y%H%M%S.log", localtime(&tl));
@@ -1145,17 +1121,14 @@ int magtelescope::start_simulating()
 
    gettimeofday(&stime, 0);
 
-   simstart = 0;
-   /*if(simstart == 0) 
-   {
-      simstart = stime.tv_sec+(stime.tv_usec/1000000.0);
-   }*/
+   m_simstart = 0;
+   
 
    if(m_tracking == 1)
    {
-      if(trackstart == 0)
+      if(m_trackstart == 0)
       {
-         trackstart = stime.tv_sec+(stime.tv_usec/1000000.0);
+         m_trackstart = stime.tv_sec+(stime.tv_usec/1000000.0);
       }
    }
 
@@ -1172,8 +1145,8 @@ int magtelescope::stop_simulating()
 inline
 int magtelescope::reset_simulation()
 {
-   simstart = 0;
-   trackstart = 0;
+   m_simstart = 0;
+   m_trackstart = 0;
 
    if(m_simulating) start_simulating();
 
@@ -1186,10 +1159,10 @@ int magtelescope::start_tracking()
    timeval stime;
    m_tracking = 1;
    m_was_tracking=1;
-   if(trackstart == 0) 
+   if(m_trackstart == 0) 
    {
       gettimeofday(&stime, 0);
-      trackstart = stime.tv_sec+(stime.tv_usec/1000000.0);
+      m_trackstart = stime.tv_sec+(stime.tv_usec/1000000.0);
    }
    return 0;
 }
@@ -1240,7 +1213,7 @@ int magtelescope::start_slew()
    timeval stime;
 
    gettimeofday(&stime, 0);
-   slewstart = stime.tv_sec+(stime.tv_usec/1000000.0);
+   m_slewstart = stime.tv_sec+(stime.tv_usec/1000000.0);
 
    m_was_tracking = m_tracking;
    m_tracking = 0;
@@ -1249,7 +1222,6 @@ int magtelescope::start_slew()
    az_lastt = 0.;
    el_lastt = 0.;
 
-   //std::cout << "starting slew\n";
    return 0;
 }
 
@@ -1258,7 +1230,7 @@ int magtelescope::stop_slew()
 {
    m_tracking = m_was_tracking;
    m_slewing = 0;
-   //std::cout << "slew stopped\n";
+
    return 0;
 }
 
@@ -1288,7 +1260,6 @@ int magtelescope::slew_az_el()
       m_slewing = 0;
       m_tracking = m_was_tracking;
    }
-   //std::cout << "slewing=" << slewing << "\n";
    return 0;
 }
 
@@ -1302,8 +1273,7 @@ int magtelescope::slew_az()
    gettimeofday(&stime, 0);
    currt = stime.tv_sec+(stime.tv_usec/1000000.0);
 
-   
-   dtacc = az_rate/az_accel;
+   dtacc = m_az_rate/m_az_accel;
    
    calc_m_next_az_el();
    az_rem = fabs(m_next_az - m_az);
@@ -1317,29 +1287,24 @@ int magtelescope::slew_az()
    
    dt = currt-az_lastt;
    
-   //std::cout << "slew_az " << m_next_az << " " << az << " " << az_rem << "\n";
-   //std::cout << "dtacc=" << dtacc << " dt=" << dt << "\n";
+   m_curr_az_rate = fabs(m_curr_az_rate);
    
-   curr_az_rate = fabs(curr_az_rate);
-   
-   if (az_rem < .5*az_accel*dtacc*dtacc && az_rem < 0.5*init_az_rem)
+   if (az_rem < .5*m_az_accel*dtacc*dtacc && az_rem < 0.5*init_az_rem)
    {
-      curr_az_rate = curr_az_rate - dt*az_accel;
-      if(curr_az_rate < 0) curr_az_rate = 0.;
+      m_curr_az_rate = m_curr_az_rate - dt*m_az_accel;
+      if(m_curr_az_rate < 0) m_curr_az_rate = 0.;
    }
-   else if(curr_az_rate < az_rate)
+   else if(m_curr_az_rate < m_az_rate)
    {
-      curr_az_rate = curr_az_rate + dt*az_accel;
-      if(curr_az_rate > az_rate) curr_az_rate = az_rate;
+      m_curr_az_rate = m_curr_az_rate + dt*m_az_accel;
+      if(m_curr_az_rate > m_az_rate) m_curr_az_rate = m_az_rate;
    }
-   if((m_next_az-m_az)*curr_az_rate < 0) curr_az_rate*=-1;
+   if((m_next_az-m_az)*m_curr_az_rate < 0) m_curr_az_rate*=-1;
    
-   //std::cout << "curr_az_rate=" << curr_az_rate << " az_rate=" << az_rate << " ";
-   m_az = m_az + dt*curr_az_rate;
+   m_az = m_az + dt*m_curr_az_rate;
    az_rem = fabs(m_next_az-m_az);
-   //std::cout << "az_rem=" << az_rem << " dazacc=" << .5*az_accel*dtacc*dtacc << "\n";
    
-   if((az_rem < .5*az_accel*dtacc*dtacc && az_rem < 0.5*init_az_rem && fabs(curr_az_rate) < 0.01) || init_az_rem < .002)
+   if((az_rem < .5*m_az_accel*dtacc*dtacc && az_rem < 0.5*init_az_rem && fabs(m_curr_az_rate) < 0.01) || init_az_rem < .002)
    {
       m_az = m_next_az;
    }
@@ -1360,7 +1325,7 @@ int magtelescope::slew_el()
    currt = stime.tv_sec+(stime.tv_usec/1000000.0);
 
    
-   dtel = el_rate/el_accel;
+   dtel = m_el_rate/m_el_accel;
    
    calc_m_next_az_el();
    el_rem = fabs(m_next_el - m_el);
@@ -1372,28 +1337,26 @@ int magtelescope::slew_el()
    }
    
    dt = currt-el_lastt;
-   curr_el_rate = fabs(curr_el_rate);
-   if (el_rem < .5*el_accel*dtel*dtel && el_rem < 0.5*init_el_rem)
+   m_curr_el_rate = fabs(m_curr_el_rate);
+   if (el_rem < .5*m_el_accel*dtel*dtel && el_rem < 0.5*init_el_rem)
    {
-      curr_el_rate = curr_el_rate - dt*el_accel;
-      if(curr_el_rate < 0) curr_el_rate = 0.;
+      m_curr_el_rate = m_curr_el_rate - dt*m_el_accel;
+      if(m_curr_el_rate < 0) m_curr_el_rate = 0.;
    }
-   else if(curr_el_rate < el_rate)
+   else if(m_curr_el_rate < m_el_rate)
    {
-      curr_el_rate = curr_el_rate + dt*el_accel;
-      if(curr_el_rate > el_rate) curr_el_rate = el_rate;
+      m_curr_el_rate = m_curr_el_rate + dt*m_el_accel;
+      if(m_curr_el_rate > m_el_rate) m_curr_el_rate = m_el_rate;
    }
-   if((m_next_el-m_el)*curr_el_rate < 0) curr_el_rate*=-1;
+   if((m_next_el-m_el)*m_curr_el_rate < 0) m_curr_el_rate*=-1;
       
-   m_el = m_el + dt*curr_el_rate;
+   m_el = m_el + dt*m_curr_el_rate;
    el_rem = fabs(m_next_el-m_el);
    
-   if((el_rem < .5*el_accel*dtel*dtel && el_rem < 0.5*init_el_rem && fabs(curr_el_rate) < 0.01) || init_el_rem < .002)
+   if((el_rem < .5*m_el_accel*dtel*dtel && el_rem < 0.5*init_el_rem && fabs(m_curr_el_rate) < 0.01) || init_el_rem < .002)
    {
       m_el = m_next_el;
    }
-   //std::cout << "curr_el_rate=" << curr_el_rate << " el_rate=" << el_rate << " ";
-   //std::cout << "el_rem=" << el_rem << " delacc=" << .5*el_accel*dtel*dtel << "\n";
    
    el_lastt = currt;
    
@@ -1406,7 +1369,7 @@ int magtelescope::start_rotmove()
    timeval stime;
 
    gettimeofday(&stime, 0);
-   rotstart = stime.tv_sec+(stime.tv_usec/1000000.0);
+   m_rotstart = stime.tv_sec+(stime.tv_usec/1000000.0);
 
    m_rotwas_following = m_rotmode;
    
@@ -1456,8 +1419,6 @@ int magtelescope::stop_rotmove()
    
    m_rotslewing = 0;
    
-   
-   //std::cout << "rotator move stopped\n";
    return 0;
 }
 
@@ -1469,9 +1430,9 @@ int magtelescope::move_rot()
    gettimeofday(&stime, 0);
    double currt = stime.tv_sec+(stime.tv_usec/1000000.0);
 
-   double dt = currt - rotstart;
+   double dt = currt - m_rotstart;
 
-   double drotang = dt * rotrate;
+   double drotang = dt * m_rotrate;
 
    if(drotang >= rotmovesz)
    {
@@ -2200,7 +2161,7 @@ int magtelescope::get_status( char *status,
             strncpy(status, "-1", statlen);
             return -2;
          }
-         deg2dms(tmparr, cat_ra);
+         deg2dms(tmparr, m_catRA);
          if(mts_format_time_doub(status, tmparr) != 0)
          {
             fprintf(stderr, "CATRA_N mts_format_time_doub returned error.\n");
@@ -2217,7 +2178,7 @@ int magtelescope::get_status( char *status,
             strncpy(status, "-1", statlen);
             return -2;
          }
-         deg2dms(tmparr, cat_dc);
+         deg2dms(tmparr, m_catDC);
          if(mts_format_time_doub(status, tmparr) != 0)
          {
             fprintf(stderr, "mts_format_time_doub returned error.\n");
@@ -2234,7 +2195,7 @@ int magtelescope::get_status( char *status,
             strncpy(status, "-1", statlen);
             return -2;
          }
-         snprintf(status, statlen, "%.2f", cat_ep);
+         snprintf(status, statlen, "%.2f", m_catEP);
          return 0; //success
       }//case CATEP_N:
       case CATRO_N:
@@ -2245,7 +2206,7 @@ int magtelescope::get_status( char *status,
             strncpy(status, "-1", statlen);
             return -2;
          }
-         snprintf(status, statlen, "%.4f", cat_ro);
+         snprintf(status, statlen, "%.4f", m_catRO);
          return 0; //success
       }//case CATRO_N:
 
@@ -2259,9 +2220,9 @@ int magtelescope::get_status( char *status,
             return -2;
          }
 
-         if(cat_rm == 1) crm = "EQU";
-         if(cat_rm == 2) crm = "GRV";
-         if(cat_rm == 3) crm = "HRZ";
+         if(m_catRM == 1) crm = "EQU";
+         if(m_catRM == 2) crm = "GRV";
+         if(m_catRM == 3) crm = "HRZ";
          
          snprintf(status, statlen, "%s", crm.c_str());
          
@@ -2275,7 +2236,7 @@ int magtelescope::get_status( char *status,
             strncpy(status, "-1", statlen);
             return -2;
          }
-         std::string tname = tgtname;
+         std::string tname = m_catObj;
          tname += "(sim)";
          snprintf(status, statlen, "%s", tname.c_str());
          return 0;
@@ -2290,7 +2251,7 @@ int magtelescope::get_status( char *status,
             return -2;
          }
 
-         deg2dms(tmparr, cat_ra);
+         deg2dms(tmparr, m_catRA);
          if(mts_format_time_doub(rastr, tmparr) != 0)
          {
             fprintf(stderr, "CATRA_N mts_format_time_doub returned error.\n");
@@ -2298,7 +2259,7 @@ int magtelescope::get_status( char *status,
             return -3;
          }
 
-         deg2dms(tmparr, cat_dc);
+         deg2dms(tmparr, m_catDC);
          if(mts_format_time_doub(dcstr, tmparr) != 0)
          {
             fprintf(stderr, "mts_format_time_doub returned error.\n");
@@ -2307,15 +2268,15 @@ int magtelescope::get_status( char *status,
          }
 
          std::string crm = "OFF";
-         if(cat_rm == 1) crm = "EQU";
-         if(cat_rm == 2) crm = "GRV";
-         if(cat_rm == 3) crm = "HRZ";
+         if(m_catRM == 1) crm = "EQU";
+         if(m_catRM == 2) crm = "GRV";
+         if(m_catRM == 3) crm = "HRZ";
          
-         std::string tname = tgtname;
+         std::string tname = m_catObj;
          tname += "(sim)";
 
          
-         snprintf(status, statlen, "%s %s %.2f %.4f %s %s", rastr, dcstr, cat_ep, cat_ro, crm.c_str(), tname.c_str());
+         snprintf(status, statlen, "%s %s %.2f %.4f %s %s", rastr, dcstr, m_catEP, m_catRO, crm.c_str(), tname.c_str());
          return 0;
       }//case CATDATA_N
       default:
@@ -2637,42 +2598,42 @@ int magtelescope::do_command(int cmd_N, std::vector<std::string> args)
 inline
 int magtelescope::set_tgtname(std::string tn)
 {
-   strncpy(tgtname, tn.c_str(), 25);
+   m_catObj = tn;
    return 0;
 }
 
 inline
 int magtelescope::set_cat_ra(double cra)
 {
-   cat_ra = cra;
+   m_catRA = cra;
    return 0;
 }
 
 inline
 int magtelescope::set_cat_dc(double cdc)
 {
-   cat_dc = cdc;
+   m_catDC = cdc;
    return 0;
 }
 
 inline
 int magtelescope::set_cat_ep(double cep)
 {
-   cat_ep = cep;
+   m_catEP = cep;
    return 0;
 }
 
 inline
 int magtelescope::set_cat_ro(double cro)
 {
-   cat_ro = cro;
+   m_catRO = cro;
    return 0;
 }
 
 inline
 int magtelescope::set_cat_rm(int crm)
 {
-   cat_rm = crm;
+   m_catRM = crm;
    return 0;
 }
    
