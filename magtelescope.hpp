@@ -83,14 +83,14 @@ protected:
    double m_next_az {0};  ///< The next value of azimuth, which will be slewed to.
    double m_next_el {0};  ///< The next value of elevation, which will be slewed to.
    
-   double m_epoch {0};    ///< coordinate epoch
-   double m_airmass {0};  ///< the current airmass
+   double m_epoch {2000.0};    ///< coordinate epoch
+   double m_airmass {1.0};  ///< the current airmass
 
-   int m_telfocus {0};    ///< Focus, or z, position of the 2ndary mirror.
-   int m_telx {0};        ///< X position of the 2ndary mirror.
-   int m_tely {0};        ///< Y position of the 2ndary mirror.
-   double m_telh {0};     ///< H angle of the 2ndary mirror.
-   double m_telv {0};     ///< V angle of the 2ndary mirror.
+   int m_telfocus {1725};    ///< Focus, or z, position of the 2ndary mirror.
+   int m_telx {10};        ///< X position of the 2ndary mirror.
+   int m_tely {-10};        ///< Y position of the 2ndary mirror.
+   double m_telh {1.24};     ///< H angle of the 2ndary mirror.
+   double m_telv {-2.34};     ///< V angle of the 2ndary mirror.
    
    int m_roi {0};              ///< The rotator of interest
    double m_rotangle {0};      ///< The rotator angle
@@ -123,11 +123,12 @@ protected:
    double m_az_accel {0.1}; ///< Acceleration of the mount in the azimuth direction.
    double m_az_rate {2.0};  ///< Maximum slew rate of the mount in the azimuth direction.
    double m_curr_az_rate {0.0}; ///< Current slewing rate of the mount in the az direction.
-   double az_lastt;
+   double m_az_lastt {0}; ///< Time of last azimuth slew calculation, used for calculating amount of motion.
+   
    double m_el_accel {0.1}; ///< Acceleration of the mount in the elevation direction.
    double m_el_rate {1.0}; ///< Maximum slew rate of the mount in the elevation direction.
    double m_curr_el_rate {0}; ///< Current slewing rate of the mount in the el direction.
-   double el_lastt;
+   double m_el_lastt {0}; ///< Time of last elevation slew calculation, used for calculating amount of motion.
 
    double m_rotslewing {0};
    double m_rotrate {6.0};  ///< The rotator slew rate [deg/sec]
@@ -634,16 +635,7 @@ void magtelescope::set_typval()
    m_next_dec = m_dec;
    
    mx::astro::calcAzEl(m_az, m_el, st()-m_ra, m_dec, m_lat);
-   m_epoch = 2000.0;
-   m_airmass = 1.0; 
-   m_telfocus = 1725; 
-   m_telx = 10;
-   m_tely = -10;
-   m_telh = 1.24;
-   m_telv = -2.34;
-
-   m_rotangle = 0;
-   m_rotenc = 0;
+   
 
    TELLOG("Set typical values.");
 }
@@ -1219,8 +1211,8 @@ int magtelescope::start_slew()
    m_tracking = 0;
    m_slewing = 1;
 
-   az_lastt = 0.;
-   el_lastt = 0.;
+   m_az_lastt = 0.;
+   m_el_lastt = 0.;
 
    return 0;
 }
@@ -1279,13 +1271,13 @@ int magtelescope::slew_az()
    az_rem = fabs(m_next_az - m_az);
 
    
-   if(az_lastt == 0)
+   if(m_az_lastt == 0)
    {
-      az_lastt = currt;
+      m_az_lastt = currt;
       init_az_rem = az_rem;
    }
    
-   dt = currt-az_lastt;
+   dt = currt-m_az_lastt;
    
    m_curr_az_rate = fabs(m_curr_az_rate);
    
@@ -1309,7 +1301,7 @@ int magtelescope::slew_az()
       m_az = m_next_az;
    }
    
-   az_lastt = currt;
+   m_az_lastt = currt;
    
    return 0;
 }
@@ -1330,13 +1322,13 @@ int magtelescope::slew_el()
    calc_m_next_az_el();
    el_rem = fabs(m_next_el - m_el);
 
-   if(el_lastt == 0)
+   if(m_el_lastt == 0)
    {
-      el_lastt = currt;
+      m_el_lastt = currt;
       init_el_rem = el_rem;
    }
    
-   dt = currt-el_lastt;
+   dt = currt-m_el_lastt;
    m_curr_el_rate = fabs(m_curr_el_rate);
    if (el_rem < .5*m_el_accel*dtel*dtel && el_rem < 0.5*init_el_rem)
    {
@@ -1358,7 +1350,7 @@ int magtelescope::slew_el()
       m_el = m_next_el;
    }
    
-   el_lastt = currt;
+   m_el_lastt = currt;
    
    return 0;
 }
