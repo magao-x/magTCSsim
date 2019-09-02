@@ -1453,6 +1453,7 @@ int magtelescope::process_string( char * inpstr,
    pthread_mutex_lock(&comMutex);
 
    //Do a safety check to make sure strlen will work as defined.
+   //This also protects strcmp from overflows.
    inpstr[ssz-1] = '\0';
    
    if(inpstr[strlen(inpstr)-1]==13) inpstr[strlen(inpstr)-1] = '\0'; //possibly from telnet
@@ -1478,6 +1479,17 @@ int magtelescope::process_string( char * inpstr,
          {
             exit(0);
          }
+         
+         if(strcmp(inpstr+7, "start simulating"))
+         {
+            start_simulating();
+         }
+         
+         if(strcmp(inpstr+7, "start tracking"))
+         {
+            start_tracking();
+         }
+         
       }
       else if(statonly)
       {
@@ -2125,8 +2137,9 @@ int magtelescope::get_status( char *status,
             return -2;
          }
 
-
-         snprintf(status,statlen, "%1d %i%i %i00 %.4f %.4f %.6f %.4f %i %i", get_roi(), get_tracking(), get_guiding(), get_slewing(), az(), el(), get_zd(), get_pa(), (int) az(), 1);
+         ///                   \todo   This is mountmv -- don't know what to do with it.
+         //                                      \/
+         snprintf(status,statlen, "%1d %i%i %i00 00 %.4f %.4f %.6f %.4f %i %i", get_roi(), get_tracking(), get_guiding(), get_slewing(), az(), el(), get_zd(), get_pa(), (int) az(), 1);
 
          return 0;
          

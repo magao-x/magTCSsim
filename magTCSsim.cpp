@@ -45,9 +45,9 @@ struct mtsfile
 int lsocket (int port)
 {
    unsigned short sport;
-   int	s;
+   int s;
    struct  sockaddr_in sockaddr;
-   int	on;
+   int on;
 
    /* start listening for connection
     */
@@ -64,9 +64,9 @@ int lsocket (int port)
        return (-1);
    }
    memset ((char *)&sockaddr, 0, sizeof(sockaddr));
-   sockaddr.sin_family		= AF_INET;
-   sockaddr.sin_port		= sport;
-   sockaddr.sin_addr.s_addr	= INADDR_ANY;
+   sockaddr.sin_family  = AF_INET;
+   sockaddr.sin_port    = sport;
+   sockaddr.sin_addr.s_addr = INADDR_ANY;
    if (bind (s, (struct sockaddr *)&sockaddr, sizeof(sockaddr)) < 0) 
    {
        perror ("bind");
