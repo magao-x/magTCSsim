@@ -98,7 +98,7 @@ void * listen_telescope_socket(void *vmf)
       
    while (!tcs_fgets(string, MAGTCS_INPUT_SIZE, fp)) 
    {
-      mtf.mts->process_string(string, MAGTCS_INPUT_SIZE, fp, mtf.port == 5800 ); /// \todo status only port
+      mtf.mts->process_string(std::string(string), fp, mtf.port == 5800 ); /// \todo status only port
    }
    
    std::cerr << "Closing\n";

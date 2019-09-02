@@ -439,10 +439,9 @@ public:
      * \returns -1 on error
      * 
      */
-   int process_string( char * inpstr, ///< [in] The input string to process.
-                       int ssz,       ///< [in] The maximum size of the input string (not the same as strlen(inpstr).
-                       FILE *fp,      ///< [in] The FILE to which to write the response
-                       bool statonly  ///< [in] Set to true if this is input from a status-only port
+   int process_string( std::string  inpstr, ///< [in] The input string to process.
+                       FILE *fp,             ///< [in] The FILE to which to write the response
+                       bool statonly         ///< [in] Set to true if this is input from a status-only port
                      );
    
    int process_command(char *response, std::string inpstr);
@@ -1442,8 +1441,7 @@ int magtelescope::move_rot()
 }
 
 inline
-int magtelescope::process_string( char * inpstr, 
-                                  int ssz,
+int magtelescope::process_string( std::string inpstr, 
                                   FILE *fp, 
                                   bool statonly
                                 )
@@ -1452,20 +1450,16 @@ int magtelescope::process_string( char * inpstr,
 
    pthread_mutex_lock(&comMutex);
 
-   //Do a safety check to make sure strlen will work as defined.
-   //This also protects strcmp from overflows.
-   inpstr[ssz-1] = '\0';
-   
-   if(inpstr[strlen(inpstr)-1]==13) inpstr[strlen(inpstr)-1] = '\0'; //possibly from telnet
+   if(inpstr[inpstr.size()-1]==13) inpstr[inpstr.size()-1] = '\0'; //possibly from telnet
 
    //If it has a space, process it like a command
-   if(strchr(inpstr, ' ') > 0)
+   if(inpstr.find(' ') != std::string::npos)
    {
-      printf ("Command received: %s.\n", inpstr);
+      std::cout << "Command received: " << inpstr << "\n";
 
-      if(strncmp(inpstr, "tcssim", 6) == 0)
+      if(inpstr.find("tcssim") == 0)
       {
-         if(strlen(inpstr) < 8) 
+         if(inpstr.size() < 8) 
          {
             std::cout << "Incomplete commmand received.\n";
          
@@ -1475,25 +1469,100 @@ int magtelescope::process_string( char * inpstr,
          
          }
          
-         if(strncmp(inpstr+7, "quit", 4) == 0)
+         if(inpstr.find("quit") == 7)
          {
             exit(0);
          }
          
-         if(strcmp(inpstr+7, "start simulating"))
+         if(inpstr.find("simulating") == 7)
          {
-            start_simulating();
+            if(inpstr.find("start") == 18) 
+            {
+               pthread_mutex_unlock(&comMutex);
+               return start_simulating();
+            }
+         
+            if(inpstr.find("stop") == 18) 
+            {
+               pthread_mutex_unlock(&comMutex);
+               return stop_simulating();
+            }
+            std::cerr << "Unrecognized simulating command.\n";
+            pthread_mutex_unlock(&comMutex);
+            return -1;
          }
          
-         if(strcmp(inpstr+7, "start tracking"))
+         if(inpstr.find("tracking") == 7)
          {
-            start_tracking();
+            if(inpstr.find("start") == 16) 
+            {
+               pthread_mutex_unlock(&comMutex);
+               return start_tracking();
+            }
+         
+            if(inpstr.find("stop") == 16) 
+            {
+               pthread_mutex_unlock(&comMutex);
+               return stop_tracking();
+            }
+            std::cerr << "Unrecognized tracking command.\n";
+            pthread_mutex_unlock(&comMutex);
+            return -1;
          }
          
+         if(inpstr.find("cat") == 7)
+         {
+            if(inpstr.find("catobj") == 7) 
+            {
+               if(inpstr.size() < 15)
+               {
+                  std::cerr << "tcssim catobj with no argument.\n";
+                  pthread_mutex_unlock(&comMutex);
+                  return -1;
+               }
+               
+               m_catObj = inpstr.substr(14);
+               pthread_mutex_unlock(&comMutex);
+               return -1;
+               
+            }
+            
+            if(inpstr.find("catra") == 7) 
+            {
+               if(inpstr.size() < 14)
+               {
+                  std::cerr << "tcssim catra with no argument.\n";
+                  pthread_mutex_unlock(&comMutex);
+                  return -1;
+               }
+               m_catRA = strtod(inpstr.substr(13).c_str(),0);
+               pthread_mutex_unlock(&comMutex);
+               return -1;
+               
+            }
+            
+            if(inpstr.find("catdec") == 7) 
+            {
+               if(inpstr.size() < 15)
+               {
+                  std::cerr << "tcssim catdec with no argument.\n";
+                  pthread_mutex_unlock(&comMutex);
+                  return -1;
+               }
+               m_catDC = strtod(inpstr.substr(14).c_str(),0);
+               pthread_mutex_unlock(&comMutex);
+               return -1;
+               
+            }
+         }
+         
+         std::cerr << "Unrecognized tcssim command.\n";
+         pthread_mutex_unlock(&comMutex);
+         return -1;
       }
       else if(statonly)
       {
-         std::cout << "This is a status only port.\n";
+         std::cerr << "This is a status only port.\n";
          
          strncpy(response, "-1", MAGTCS_RESP_SIZE);
          
@@ -1501,15 +1570,15 @@ int magtelescope::process_string( char * inpstr,
       }
       else
       {
-         process_command(response, inpstr);
+         process_command(response, inpstr.c_str());
          tcs_fputs(response, fp);
       }
    }
    else
    {
-      printf ("Status request received: %s.\n", inpstr);
+      std::cout << "Status request received: " <<inpstr << "\n";;
 
-      get_status(response, MAGTCS_RESP_SIZE, inpstr);
+      get_status(response, MAGTCS_RESP_SIZE, (char *) inpstr.c_str());
 
       tcs_fputs(response, fp);
    }
