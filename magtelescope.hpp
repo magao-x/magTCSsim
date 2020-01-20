@@ -905,16 +905,13 @@ double magtelescope::get_zd()
 inline
 double magtelescope::get_pa()
 {
-   return mx::astro::parAngDeg(m_lat, dec(), -get_ha()/24.*360.);
-   
-   //return sin(get_az()*3.14159/180.)*cos(m_lat*3.14149/180.)/cos(dec()*3.14149/180.)*180./3.14159;
+   return mx::astro::parAngDeg( -get_ha()/24.*360., dec(), m_lat, true); //true is a dummy argument, will be removed in the future
 }
 
 inline
 double magtelescope::get_next_pa()
 {
-   return mx::astro::parAngDeg(m_lat, next_dec(), -get_next_ha()/24.*360.);
-   //return sin(get_m_next_az()*3.14159/180.)*cos(m_lat*3.14149/180.)/cos(next_dec()*3.14149/180.)*180./3.14159;
+   return mx::astro::parAngDeg( -get_next_ha()/24.*360., next_dec(), m_lat, true); //true is a dummy argument, will be removed in the future
 }
 
 inline
