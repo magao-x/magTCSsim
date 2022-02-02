@@ -37,7 +37,7 @@
 #include <boost/math/constants/constants.hpp>
 #define PI (boost::math::constants::pi<double>())
 
-#include <mx/timeUtils.hpp>
+#include <mx/sys/timeUtils.hpp>
 #include <mx/astro/astroDynamics.hpp>
 
 
@@ -802,6 +802,8 @@ int magtelescope::off_dec(double d)
    
    snprintf(lmsg, lmsg_size, "Set dec offset: %f", d);
    TELLOG(lmsg);
+
+   return 0;
 }
 
 inline
@@ -1581,7 +1583,7 @@ int magtelescope::process_string( std::string inpstr,
    }
 
    lastcom.push_back(inpstr);
-   lastcom_time.push_back(mx::get_curr_time());
+   lastcom_time.push_back(mx::sys::get_curr_time());
    lastcom.pop_front();
    lastcom_time.pop_front();
    lastresp.push_back(response);

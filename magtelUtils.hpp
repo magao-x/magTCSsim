@@ -106,7 +106,7 @@ inline
 int mts_format_date(char dtstr[11], int dtarr[3])
 {
    int i;
-   char tmp[5];
+   char tmp[32];
    strncpy(dtstr, "0000-00-00",11);
 
    //Year first
@@ -116,7 +116,7 @@ int mts_format_date(char dtstr[11], int dtarr[3])
       return -1;
    }
    //First turn it into a string.
-   snprintf(tmp, 5,"%i", dtarr[0]);
+   snprintf(tmp, sizeof(tmp),"%i", dtarr[0]);
 
    //then copy
    for(i=0;i<4; i++) dtstr[i] = tmp[i];
@@ -130,7 +130,7 @@ int mts_format_date(char dtstr[11], int dtarr[3])
       }
 
       //First turn it into a string.
-      snprintf(tmp, 3,"%i", dtarr[i]);
+      snprintf(tmp, sizeof(tmp),"%i", dtarr[i]);
 
       //Now copy the digits
       if(dtarr[i] > 9) 

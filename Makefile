@@ -1,0 +1,11 @@
+TARGET=magTCSsim
+
+NEED_BLAS=no
+NEED_SOFA=yes
+NEED_LEVMAR=no
+NEED_XPA=no
+NEED_FFTW=no
+
+include $(MXMAKEFILE)
+
+

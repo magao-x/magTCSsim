@@ -103,6 +103,8 @@ void * listen_telescope_socket(void *vmf)
    
    std::cerr << "Closing\n";
    fclose(fp);
+
+   return nullptr;
 }
 
 int network_accept_any( int & sockNo,
