@@ -138,7 +138,7 @@ protected:
 
    int m_dome_stat {1}; ///< The dome status, 1 is open, 0 is closed.
 
-   std::string m_catObj; ///< Catalog object name
+   std::string m_catObj {"UNKNOWN"}; ///< Catalog object name
    double m_catRA; ///< Catalog right ascension [degrees]
    double m_catDC; ///< Catalog declination [degrees]
    double m_catEP; ///< Catalog epoch
@@ -1476,7 +1476,10 @@ int magtelescope::process_string( std::string inpstr,
 
    pthread_mutex_lock(&comMutex);
 
-   if(inpstr[inpstr.size()-1]==13) inpstr[inpstr.size()-1] = '\0'; //possibly from telnet
+   if(inpstr[inpstr.size()-1]==13)
+   {
+        inpstr.erase(inpstr.size()-1); 
+   }
 
    //If it has a space, process it like a command
    if(inpstr.find(' ') != std::string::npos)
@@ -1546,8 +1549,9 @@ int magtelescope::process_string( std::string inpstr,
                   pthread_mutex_unlock(&comMutex);
                   return -1;
                }
+	       
+	       m_catObj = inpstr.substr(14);
 
-               m_catObj = inpstr.substr(14);
                pthread_mutex_unlock(&comMutex);
                return -1;
 
@@ -1620,7 +1624,7 @@ int magtelescope::process_string( std::string inpstr,
    }
    else
    {
-      std::cout << "Status request received: " <<inpstr << "\n";;
+      //std::cout << "Status request received: " <<inpstr << "\n";;
 
       get_status(response, MAGTCS_RESP_SIZE, (char *) inpstr.c_str());
 
@@ -1958,7 +1962,7 @@ int magtelescope::get_status( char *status,
             return -2;
          }
          snprintf(status, statlen, "  %06i %06i %06i %06i %06i %06i %.3f %.3f %.3f %.3f", get_telfocus(), get_telfocus(), get_telx(), get_telx(), get_tely(), get_tely(), get_telh(), get_telh(), get_telv(), get_telv());
-         std::cout << status << "\n";
+         //std::cout << status << "\n";
          return 0;
       }//case VEDATA_N
 
@@ -2356,6 +2360,9 @@ int magtelescope::get_status( char *status,
          }
          std::string tname = m_catObj;
          tname += "(sim)";
+
+	 std::cerr << "tname: " << tname << "\n";
+
          snprintf(status, statlen, "%s", tname.c_str());
          return 0;
       }//case CATOBJ_N
