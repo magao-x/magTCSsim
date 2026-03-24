@@ -664,11 +664,9 @@ int magtelescope::dateobsNow()
    time(&rawtime);
    struct tm * uttm = gmtime (&rawtime);
 
-   int dobs[3];
-
    m_dateobs[0] = 1900+uttm->tm_year;
    m_dateobs[1] = uttm->tm_mon+1;
-   m_dateobs[2] = 1 + uttm->tm_mday;
+   m_dateobs[2] = uttm->tm_mday;
 
    return 0;
 }
@@ -1475,6 +1473,20 @@ int magtelescope::process_string( std::string inpstr,
    char response[MAGTCS_RESP_SIZE];
 
    pthread_mutex_lock(&comMutex);
+
+   if(inpstr.empty())
+   {
+      strncpy(response, "-1", MAGTCS_RESP_SIZE);
+      tcs_fputs(response, fp);
+      lastcom.push_back(inpstr);
+      lastcom_time.push_back(mx::sys::get_curr_time());
+      lastcom.pop_front();
+      lastcom_time.pop_front();
+      lastresp.push_back(response);
+      lastresp.pop_front();
+      pthread_mutex_unlock(&comMutex);
+      return -1;
+   }
 
    if(inpstr[inpstr.size()-1]==13)
    {

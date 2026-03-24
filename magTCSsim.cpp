@@ -88,6 +88,7 @@ void * listen_telescope_socket(void *vmf)
    mtf.mts = ((mtsfile *) vmf)->mts;
    mtf.fd = ((mtsfile *) vmf)->fd;
    mtf.port = ((mtsfile*) vmf)->port;
+   delete ((mtsfile *) vmf);
 
    FILE *fp;
       
@@ -192,15 +193,24 @@ int main (int argc, char *argv[])
       fd = network_accept_any(sockNo, socks, 2,(struct sockaddr *)0, (socklen_t *)0);
    
       mtsfile mtf;
+      mtsfile *mtfp = new mtsfile;
        
-      mtf.mts = &mts;
-      mtf.fd = fd;
-      mtf.port = ports[sockNo];
+      mtfp->mts = &mts;
+      mtfp->fd = fd;
+      mtfp->port = ports[sockNo];
       
       std::cerr << "Connected: " << sockNo << " " << ports[sockNo] << " " << fd  << "\n";
       
       pthread_t thread_id;
-      pthread_create(&thread_id, NULL, &listen_telescope_socket, (void *) &mtf);
+      if(pthread_create(&thread_id, NULL, &listen_telescope_socket, (void *) mtfp) != 0)
+      {
+         perror("pthread_create");
+         close(fd);
+         delete mtfp;
+         continue;
+      }
+
+      pthread_detach(thread_id);
    }
    
    exit (0);
